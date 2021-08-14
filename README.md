@@ -17,15 +17,19 @@
   - [Airflow:](#airflow)
     - [Metadata Database - Postgres](#metadata-database---postgres)
     - [Scheduler](#scheduler)
-    - [Executor - Celery](#executor---celery)
-    - [Celery Monitoring Tool - Flower](#celery-monitoring-tool---flower)
+    - [Executor](#executor)
+  - [Celery](#celery)
+    - [Redis - Message Broker](#redis---message-broker)
+    - [Flower - Celery Monitoring Tool](#flower---celery-monitoring-tool)
 - [Structure](#structure)
 
 </details>
 
 ## Overview
 
-The purpose of this overview is to provide a base configuration for using Airflow 2.0 with Docker
+The purpose of this repository is to provide a base configuration for using Airflow 2.0 with Docker.
+
+This repository can be used as a template for other repositories to build upon. More information about creating a repository from this template [here](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/creating-a-repository-from-a-template).
 
 ## Quick Start
 
@@ -63,7 +67,7 @@ Place your dag files within [dags/](dags/) and your plugins within [plugins/](pl
 
 #### Set file permissions
 
-Within our [docker-compose](docker-compose.yaml) file we are mounting a number of directories i.e [config/](config/), [dags/](dags/), [logs/] and [plugins/](plugins/). To avoid issue with non matching file permissions, we need to ensure that our mounted volumes within every docker container use the native Linux filesystem user/group permissions.  
+Within our [docker-compose](docker-compose.yaml) file we are mounting a number of directories i.e [config/](config/), [dags/](dags/), [logs/](logs/) and [plugins/](plugins/). To avoid issue with non matching file permissions, we need to ensure that our mounted volumes within every docker container use the native Linux filesystem user/group permissions.  
 
 To fix this we can specify the UID and GID for Airflow and pass this to our env file:
 ```bash
@@ -112,6 +116,13 @@ To generate the key you will need to install [cryptography](https://pypi.org/pro
 
 ```bash
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+With the newly created Fernet key, update your `.env` file as follows:
+
+```bash
+# .env
+FERNET_KEY=<YOUR FERNET KEY>
 ```
 
 It is important to keep the generated fernet key safe as it is guaranteed that a password encrypted using it cannot be manipulated or read without the key.
@@ -192,14 +203,15 @@ For instance we can scale up to two schedulers by running:
 docker-compose up --scale airflow-scheduler=2
 ```
 
-
-#### Executor - [Celery](https://docs.celeryproject.org/en/stable/getting-started/introduction.html)
+#### Executor
 
 Airflow provides the option for Local or Remote executors. Local executors usually run tasks inside the scheduler process, while Remote executors usually run those tasks remotely via a pool of workers.
 
 The default executor is a Sequential Executor which runs tasks sequentially without the option for parallelism.
 
-We have chosen [Celery Executor](https://airflow.apache.org/docs/apache-airflow/stable/executor/celery.html) as our Remote Executor to scale out the number of workers. In order to use a Celery Executor a Celery backend such as RabbitMQ, Redis, etc. are required. For our purposes Redis was chosen.
+### [Celery](https://docs.celeryproject.org/en/stable/getting-started/introduction.html)
+
+We have chosen the Celery Executor as our Remote Executor to scale out the number of workers.
 
 For instance we can scale up to three celery clusters by running:
 ```bash
@@ -210,8 +222,13 @@ Or we could scale up to three celery clusters and two schedulers by running:
 ```bash
 docker-compose up --scale airflow-worker=3 --scale airflow-scheduler=2
 ```
+#### [Redis](https://redis.io/) - Message Broker
 
-#### Celery Monitoring Tool - [Flower](https://flower.readthedocs.io/en/latest/)
+In order to use a Celery Executor a Celery backend such as RabbitMQ, Redis, etc. are required. For our purposes Redis was chosen.
+
+Redis is a distributed in memory key value database. For Airflow it is used as a message broker by delivering messages to the celery workers.
+
+#### [Flower](https://flower.readthedocs.io/en/latest/) - Celery Monitoring Tool
 
 Flower is a tool used for monitoring and administering Celery clusters.
 
@@ -222,7 +239,6 @@ For example after scaling to three celery workers our Flower tool should provide
 ![Flower](images/airflow_flower.png)
 
 </details>
-
 
 ## Structure
 
