@@ -14,7 +14,7 @@
   - [Initialise Airflow](#initialise-airflow)
   - [Run Airflow](#run-airflow)
 - [Architecture](#architecture)
-  - [Airflow:](#airflow)
+  - [Airflow](#airflow)
     - [Metadata Database - Postgres](#metadata-database---postgres)
     - [Scheduler](#scheduler)
     - [Executor](#executor)
@@ -71,7 +71,7 @@ Within our [docker-compose](docker-compose.yaml) file we are mounting a number o
 
 To fix this we can specify the UID and GID for Airflow and pass this to our env file:
 ```bash
-echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0" > .env
+echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0" >> .env
 ```
 
 
@@ -115,10 +115,10 @@ Airflow users [Fernet](https://github.com/fernet/spec/) to encrypt passwords wit
 To generate the key you will need to install [cryptography](https://pypi.org/project/cryptography/) and then run the following command:
 
 ```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+echo -e "FERNET_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")" >> .env
 ```
 
-With the newly created Fernet key, update your `.env` file as follows:
+This will add the Fernet key to your `.env` file as follows:
 
 ```bash
 # .env
@@ -177,7 +177,7 @@ Place your dag files within [dags/](dags/) and your plugins within [plugins/](pl
 
 All applications are packaged up using `Docker` to isolate the software from its env so that it works in different development environments. We also make use of the docker compose tool to define and run multiple Docker container applications.
 
-### [Airflow](https://airflow.apache.org/):
+### [Airflow](https://airflow.apache.org/)
 
 Airflow consists of several components:
 
